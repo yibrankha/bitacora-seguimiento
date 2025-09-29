@@ -1,0 +1,1006 @@
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bitácora de Seguimiento de Personas en Situación de Calle</title>
+        <!-- Carga de Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Configuración de color y fuente Inter -->
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Inter', 'sans-serif'],
+                        },
+                        colors: {
+                            // Nuevo color principal: #9D2148
+                            primary: '#9D2148', 
+                            secondary: '#D97706', // Amber-600 (Mantenido para contraste)
+                            success: '#059669', // Emerald-600
+                            danger: '#DC2626', // Red-600
+                            background: '#F9FAFB', // Gray-50
+                        }
+                    }
+                }
+            }
+        </script>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+            
+            .card {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                border: 1px solid #E5E7EB; /* Gray-200 */
+            }
+            
+            /* Ocultar scrollbar sin afectar la funcionalidad de scroll */
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .hide-scrollbar {
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+            
+            /* Estilo para las pestañas activas */
+            .tab-button.active {
+                /* Usar el nuevo color primario para el indicador */
+                border-bottom: 2px solid #9D2148;
+                color: #9D2148;
+                font-weight: 600;
+            }
+        </style>
+    </head>
+    <body class="bg-background min-h-screen flex items-center justify-center p-4 font-sans">
+
+        <!-- Contenedor Principal de la Aplicación -->
+        <div id="app-container" class="w-full max-w-5xl bg-white rounded-xl shadow-2xl overflow-hidden min-h-[700px] flex flex-col">
+
+            <!-- Header Fijo de la Aplicación -->
+            <header class="bg-primary text-white p-4 flex justify-between items-center shadow-lg">
+                <h1 class="text-2xl font-bold">Bitácora de Seguimiento de Personas en Situación de Calle</h1>
+                <div id="user-info" class="text-sm"></div>
+            </header>
+
+            <!-- PANTALLA DE LOGIN -->
+            <div id="login-screen" class="page flex flex-col items-center justify-center p-8 flex-grow">
+                <div class="card w-full max-w-md p-8 bg-white rounded-xl">
+                    <h2 class="text-3xl font-extrabold text-gray-900 mb-6 text-center">Bienvenido</h2>
+                    <p class="text-gray-500 mb-8 text-center">Use **user/pass** para acceder.</p>
+
+                    <!-- Campos de Usuario y Contraseña -->
+                    <div class="space-y-4">
+                        <input type="text" id="login-user" placeholder="Usuario" value="user"
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                        <input type="password" id="login-pass" placeholder="Contraseña" value="pass"
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary transition duration-150">
+                    </div>
+
+                    <!-- Mensaje de Error (Inicialmente oculto) -->
+                    <p id="error-message" class="text-danger text-sm mt-4 text-center hidden">
+                        Usuario o contraseña incorrectos.
+                    </p>
+
+                    <!-- Botones de Acción -->
+                    <div class="mt-8 space-y-3">
+                        <button onclick="handleLogin()"
+                                class="w-full bg-primary text-white p-3 rounded-lg font-semibold hover:bg-[#8A1D3F] transition duration-200 shadow-md">
+                            Ingresar
+                        </button>
+                        <button onclick="showMessage('Nuevo Usuario', 'La funcionalidad está en desarrollo.', 'info')"
+                                class="w-full bg-gray-200 text-gray-800 p-3 rounded-lg font-semibold hover:bg-gray-300 transition duration-200">
+                            Nuevo Usuario
+                        </button>
+                        <button onclick="showMessage('Manual', 'Abriendo manual de usuario...', 'info')"
+                                class="w-full bg-secondary text-white p-3 rounded-lg font-semibold hover:bg-orange-700 transition duration-200">
+                            Manual de Usuario
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANTALLA PRINCIPAL -->
+            <div id="main-screen" class="page p-8 flex flex-col hidden flex-grow">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Panel Principal</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-grow">
+                    <div onclick="showPage('new-record')" class="card p-6 rounded-xl bg-[#F0E6E8] hover:bg-[#E5D2D6] transition duration-200 cursor-pointer flex flex-col justify-between">
+                        <h3 class="text-xl font-semibold text-primary mb-2">Nuevo Registro</h3>
+                        <p class="text-gray-600">Iniciar registro (Aproximación, Módulo A, Módulo B).</p>
+                        <span class="text-primary font-medium mt-4 block">Iniciar &rarr;</span>
+                    </div>
+                    <div onclick="showPage('search')" class="card p-6 rounded-xl bg-green-50 hover:bg-green-100 transition duration-200 cursor-pointer flex flex-col justify-between">
+                        <h3 class="text-xl font-semibold text-green-700 mb-2">Búsqueda de Persona</h3>
+                        <p class="text-gray-600">Buscar por Nombre o ID y acceder a seguimiento.</p>
+                        <span class="text-green-700 font-medium mt-4 block">Buscar &rarr;</span>
+                    </div>
+                    <div onclick="showMessage('Reportes', 'Requiere permisos: Primario, Supervisor, Clínico.', 'warning')" class="card p-6 rounded-xl bg-yellow-50 hover:bg-yellow-100 transition duration-200 cursor-pointer flex flex-col justify-between">
+                        <h3 class="text-xl font-semibold text-secondary mb-2">Generación de Reportes</h3>
+                        <p class="text-gray-600">Acceso a informes estadísticos y tableros.</p>
+                        <span class="text-secondary font-medium mt-4 block">Acceder &rarr;</span>
+                    </div>
+                    <div onclick="showPage('login')" class="card p-6 rounded-xl bg-gray-100 hover:bg-gray-200 transition duration-200 cursor-pointer flex flex-col justify-between">
+                        <h3 class="text-xl font-semibold text-gray-700 mb-2">Salir</h3>
+                        <p class="text-gray-600">Cerrar sesión de forma segura.</p>
+                        <span class="text-gray-700 font-medium mt-4 block">Cerrar Sesión &rarr;</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANTALLA DE NUEVO REGISTRO -->
+            <div id="new-record-screen" class="page p-8 hidden flex-col flex-grow">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Nuevo Registro de Atención</h2>
+
+                <!-- Botones de Navegación de Formulario -->
+                <div class="flex border-b border-gray-200 mb-6 sticky top-0 bg-white z-10 overflow-x-auto">
+                    <button id="tab-aprox" onclick="showRecordTab('aprox')" class="tab-button active p-3 mr-4 text-gray-600 whitespace-nowrap">1. Aproximación Inicial (A+B)</button>
+                    <button id="tab-cuidados" onclick="showRecordTab('cuidados')" class="tab-button p-3 mr-4 text-gray-600 whitespace-nowrap">2. Desarrollo de Cuidados</button>
+                    <button id="tab-plan" onclick="showRecordTab('plan')" class="tab-button p-3 text-gray-600 whitespace-nowrap">3. Plan de Vida</button>
+                </div>
+                
+                <div class="overflow-y-auto hide-scrollbar flex-grow">
+                    <!-- 1. Aproximación Inicial (Módulo A y B) -->
+                    <div id="record-aprox" class="record-tab space-y-8">
+                        <div class="card p-6 bg-[#F0E6E8]">
+                            <h3 class="text-xl font-semibold mb-4 text-primary">Módulo A: Primera Interacción</h3>
+                            
+                            <!-- Campos de Brigada, Fecha y Ubicación -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b pb-6 mb-6">
+                                <!-- Número de Brigada (BD) -->
+                                <div>
+                                    <label for="brigada-num" class="block text-sm font-medium text-gray-700">Número de Brigada (BD)</label>
+                                    <input type="number" id="brigada-num" placeholder="Escriba el número" class="p-3 border rounded-lg w-full mt-1">
+                                </div>
+
+                                <!-- Fecha y Hora (Auto) - Mantenido para JS/simulación -->
+                                <div>
+                                    <label for="fecha-hora-aprox" class="block text-sm font-medium text-gray-700">Fecha y Hora (Auto)</label>
+                                    <input type="text" value="" disabled id="fecha-hora-aprox" class="p-3 border rounded-lg bg-gray-100 w-full mt-1">
+                                </div>
+
+                                <!-- Ubicación Geográfica (Texto/Geo) -->
+                                <div class="md:col-span-2">
+                                    <label for="ubicacion" class="block text-sm font-medium text-gray-700">Ubicación Geográfica (Texto/Geo)</label>
+                                    <input type="text" id="ubicacion" placeholder="Especifique ubicación" class="p-3 border rounded-lg w-full mt-1">
+                                </div>
+
+                                <!-- Brigadistas -->
+                                <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                                    <!-- Brigadista 1 -->
+                                    <div>
+                                        <label for="brigadista1" class="block text-sm font-medium text-gray-700">Brigadista 1</label>
+                                        <input type="text" id="brigadista1" placeholder="Nombre completo" class="p-3 border rounded-lg w-full mt-1">
+                                    </div>
+                                    <!-- Brigadista 2 -->
+                                    <div>
+                                        <label for="brigadista2" class="block text-sm font-medium text-gray-700">Brigadista 2</label>
+                                        <input type="text" id="brigadista2" placeholder="Nombre completo" class="p-3 border rounded-lg w-full mt-1">
+                                    </div>
+                                    <!-- Brigadista 3 -->
+                                    <div>
+                                        <label for="brigadista3" class="block text-sm font-medium text-gray-700">Brigadista 3</label>
+                                        <input type="text" id="brigadista3" placeholder="Nombre completo" class="p-3 border rounded-lg w-full mt-1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CAPTURA DE DATOS DE IDENTIFICACIÓN -->
+                            <div class="mt-6 border-b pb-6 mb-6">
+                                <h4 class="font-bold text-lg text-primary mb-3">Identificación de la Persona</h4>
+                                <p class="block text-sm font-medium text-gray-700 mb-2">¿La persona está plenamente identificada y puede dar su nombre completo?</p>
+                                <div id="identificacion-pregunta" class="flex flex-wrap gap-6 mb-4">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="identificacion_status" value="si" onclick="toggleIdentificacionFields('si')" class="form-radio text-primary h-4 w-4">
+                                        <span class="ml-2">Sí (Nombre completo)</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="identificacion_status" value="no" onclick="toggleIdentificacionFields('no')" class="form-radio text-primary h-4 w-4" checked>
+                                        <span class="ml-2">No (Solo apodo/nombre conocido)</span>
+                                    </label>
+                                </div>
+
+                                <!-- Campos para Identificación Completa (Inicialmente oculto) -->
+                                <div id="identificacion-completa" class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-white hidden">
+                                    <div>
+                                        <label for="nombre-completo" class="block text-sm font-medium text-gray-700">Nombre(s)</label>
+                                        <input type="text" id="nombre-completo" placeholder="Escriba el nombre(s)" class="p-3 border rounded-lg w-full mt-1">
+                                    </div>
+                                    <div>
+                                        <label for="apellido1" class="block text-sm font-medium text-gray-700">Primer Apellido</label>
+                                        <input type="text" id="apellido1" placeholder="Primer apellido" class="p-3 border rounded-lg w-full mt-1">
+                                    </div>
+                                    <div>
+                                        <label for="apellido2" class="block text-sm font-medium text-gray-700">Segundo Apellido (Opcional)</label>
+                                        <input type="text" id="apellido2" placeholder="Segundo apellido" class="p-3 border rounded-lg w-full mt-1">
+                                    </div>
+                                </div>
+
+                                <!-- Campo para Identificación Parcial (Inicialmente visible por defecto) -->
+                                <div id="identificacion-parcial" class="p-4 border rounded-lg bg-white">
+                                    <label for="nombre-apodo" class="block text-sm font-medium text-gray-700">Nombre o Apodo</label>
+                                    <input type="text" id="nombre-apodo" placeholder="Nombre o Apodo conocido" class="p-3 border rounded-lg w-full mt-1">
+                                </div>
+                            </div>
+                            
+                            <!-- RESTO DEL MÓDULO A -->
+                            <div class="mt-6">
+                                <h4 class="font-medium text-gray-700 mb-3">Contacto Exitoso (Selección Única)</h4>
+                                <div id="contact-exitoso" class="flex flex-wrap gap-4">
+                                    <label class="inline-flex items-center"><input type="radio" name="contacto_exitoso" value="si" class="form-radio text-primary h-4 w-4"><span class="ml-2">Sí – Aceptó interactuar</span></label>
+                                    <label class="inline-flex items-center"><input type="radio" name="contacto_exitoso" value="parcial" class="form-radio text-primary h-4 w-4"><span class="ml-2">Parcial – Sólo respondió preguntas básicas</span></label>
+                                    <label class="inline-flex items-center"><input type="radio" name="contacto_exitoso" value="no" class="form-radio text-primary h-4 w-4"><span class="ml-2">No – Rechazó acercamiento</span></label>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 border-t pt-6">
+                                <h4 class="font-medium text-gray-700 mb-3">Contexto Interacción (Selección Múltiple)</h4>
+                                <div id="contexto-interaccion" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-primary rounded"><span class="ml-2">Solo / Sola</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-primary rounded"><span class="ml-2">En pareja</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-primary rounded"><span class="ml-2">En grupo</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-primary rounded"><span class="ml-2">Con mascota</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-primary rounded"><span class="ml-2">Vendedor ambulante</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-primary rounded"><span class="ml-2">Realizando actividad artística</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-primary rounded"><span class="ml-2">Estado inconveniente</span></label>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 border-t pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="font-medium text-gray-700 mb-3">Sexo Aparente</h4>
+                                    <div id="sexo-aparente" class="flex flex-wrap gap-4">
+                                        <label class="inline-flex items-center"><input type="radio" name="sexo_aparente" class="form-radio text-primary h-4 w-4"><span class="ml-2">Mujer</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="sexo_aparente" class="form-radio text-primary h-4 w-4"><span class="ml-2">Hombre</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="sexo_aparente" class="form-radio text-primary h-4 w-4"><span class="ml-2">Otra identidad (LGBTI+)</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="sexo_aparente" class="form-radio text-primary h-4 w-4"><span class="ml-2">No especificado</span></label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-700 mb-3">Rango de Edad</h4>
+                                    <div id="rango-edad" class="grid grid-cols-2 gap-3">
+                                        <label class="inline-flex items-center"><input type="radio" name="rango_edad" class="form-radio text-primary h-4 w-4"><span class="ml-2">18-25 años</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="rango_edad" class="form-radio text-primary h-4 w-4"><span class="ml-2">26-35 años</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="rango_edad" class="form-radio text-primary h-4 w-4"><span class="ml-2">36-50 años</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="rango_edad" class="form-radio text-primary h-4 w-4"><span class="ml-2">51-65 años</span></label>
+                                        <label class="inline-flex items-center"><input type="radio" name="rango_edad" class="form-radio text-primary h-4 w-4"><span class="ml-2">+65 años</span></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 space-y-4">
+                                <textarea placeholder="Rasgos Físicos (Descripción)" class="w-full p-3 border rounded-lg" rows="2"></textarea>
+                            </div>
+                            
+                            <div class="mt-6 border-t pt-4">
+                                <p class="text-sm text-gray-500 mb-2">Clave Única (Generada al guardar):</p>
+                                <p id="clave-unica-display" class="font-mono bg-gray-200 p-2 rounded-lg inline-block text-gray-700">Pendiente de Guardado</p>
+                            </div>
+                            
+                            <button onclick="guardarAproximacionInicial()"
+                                    class="mt-6 bg-primary text-white p-3 rounded-lg font-semibold hover:bg-[#8A1D3F] transition duration-200">
+                                Guardar Módulo A y Preguntar Atención Inmediata
+                            </button>
+                        </div>
+                        
+                        <!-- MÓDULO B (Oculto hasta guardar Módulo A y responder "No" a Alerta) -->
+                        <div id="modulo-b-container" class="card p-6 bg-yellow-50 hidden">
+                            <h3 class="text-xl font-semibold mb-4 text-secondary">Módulo B: Necesidades y Contexto</h3>
+
+                            <div id="necesidades-inmediatas" class="mt-4">
+                                <h4 class="font-medium text-gray-700 mb-3">Necesidades Inmediatas (Selección Múltiple)</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Alimentación</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Agua</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Abrigo / Cobijas</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Calzado</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Bien de movilidad asistida</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Atención médica</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Artículos de higiene</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Información sobre albergues</span></label>
+                                </div>
+                            </div>
+
+                            <div id="estado-salud-observable" class="mt-6 border-t pt-6">
+                                <h4 class="font-medium text-gray-700 mb-3">Estado de Salud Observable (Selección Múltiple)</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Aparentemente estable</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Tos dificultosa</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Cojea visiblemente</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Heridas visibles</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Problemas dentales aparentes</span></label>
+                                    <label class="inline-flex items-center"><input type="checkbox" class="form-checkbox text-secondary rounded"><span class="ml-2">Comportamiento alterado</span></label>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 border-t pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <h4 class="font-medium text-gray-700 mb-3">Situación en Calle</h4>
+                                    <div class="space-y-2">
+                                        <label class="block"><input type="radio" name="situacion_calle" class="form-radio text-secondary h-4 w-4"><span class="ml-2">Recién llegado (< 1 mes)</span></label>
+                                        <label class="block"><input type="radio" name="situacion_calle" class="form-radio text-secondary h-4 w-4"><span class="ml-2">Callejero habitual (> 1 año)</span></label>
+                                        <label class="block"><input type="radio" name="situacion_calle" class="form-radio text-secondary h-4 w-4"><span class="ml-2">Callejero intermitente</span></label>
+                                        <label class="block"><input type="radio" name="situacion_calle" class="form-radio text-secondary h-4 w-4"><span class="ml-2">No quiso especificar</span></label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-700 mb-3">Documentación</h4>
+                                    <div class="space-y-2">
+                                        <label class="block"><input type="radio" name="documentacion" class="form-radio text-secondary h-4 w-4"><span class="ml-2">Sí – Tiene INE/Curp</span></label>
+                                        <label class="block"><input type="radio" name="documentacion" class="form-radio text-secondary h-4 w-4"><span class="ml-2">No – No tiene</span></label>
+                                        <label class="block"><input type="radio" name="documentacion" class="form-radio text-secondary h-4 w-4"><span class="ml-2">No – La perdió/le robaron</span></label>
+                                        <label class="block"><input type="radio" name="documentacion" class="form-radio text-secondary h-4 w-4"><span class="ml-2">No quiso responder</span></label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-700 mb-3">Redes de Apoyo</h4>
+                                    <div class="space-y-2">
+                                        <label class="block"><input type="radio" name="redes_apoyo" class="form-radio text-secondary h-4 w-4"><span class="ml-2">Mencionó contacto familiar</span></label>
+                                        <label class="block"><input type="radio" name="redes_apoyo" class="form-radio text-secondary h-4 w-4"><span class="ml-2">Mencionó amigos/en la calle</span></label>
+                                        <label class="block"><input type="radio" name="redes_apoyo" class="form-radio text-secondary h-4 w-4"><span class="ml-2">Dijo no tener red de apoyo</span></label>
+                                        <label class="block"><input type="radio" name="redes_apoyo" class="form-radio text-secondary h-4 w-4"><span class="ml-2">No quiso hablar del tema</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button onclick="showMessage('Guardar Módulo B', 'Registro de Aproximación Inicial (A+B) completado y guardado con éxito. Clave Única generada.', 'success'); document.getElementById('tab-cuidados').scrollIntoView({ behavior: 'smooth' });"
+                                    class="mt-6 bg-secondary text-white p-3 rounded-lg font-semibold hover:bg-orange-700 transition duration-200">
+                                Guardar Registro Completo (Aproximación Inicial)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Desarrollo de Cuidados -->
+                    <div id="record-cuidados" class="record-tab hidden space-y-8">
+                        <div class="card p-6 bg-gray-50">
+                            <h3 class="text-xl font-semibold mb-6 text-primary">Desarrollo de Cuidados</h3>
+                            
+                            <!-- SECCIÓN NECESIDADES INMEDIATAS -->
+                            <h4 class="font-bold text-lg mb-4 border-b pb-2 text-primary">Necesidades Inmediatas</h4>
+                            <div id="inmediatas-list" class="space-y-4">
+                                <!-- Generado por JS -->
+                            </div>
+                            
+                            <!-- SECCIÓN NECESIDADES A MEDIANO PLAZO -->
+                            <h4 class="font-bold text-lg mt-8 mb-4 border-b pb-2 text-secondary">Necesidades a Mediano Plazo</h4>
+                            <div id="mediano-plazo-list" class="space-y-4">
+                                <!-- Generado por JS -->
+                            </div>
+                            
+                            <div class="mt-8 flex space-x-4">
+                                <button onclick="showMessage('Guardar Cuidados', 'Desarrollo de Cuidados guardado.', 'success')"
+                                        class="bg-primary text-white p-3 rounded-lg font-semibold hover:bg-[#8A1D3F] transition duration-200 flex-grow">
+                                    Guardar Desarrollo de Cuidados
+                                </button>
+                                <button onclick="showMessage('Perfil PSC', 'Abriendo Perfil de Prioridad, Salud y Contexto.', 'info')"
+                                        class="bg-gray-300 text-gray-800 p-3 rounded-lg font-semibold hover:bg-gray-400 transition duration-200">
+                                    Perfil PSC
+                                </button>
+                                <button onclick="showMessage('Historial Clínico', 'Acceso denegado: Requiere permisos especiales.', 'danger')"
+                                        class="bg-red-200 text-red-800 p-3 rounded-lg font-semibold hover:bg-red-300 transition duration-200">
+                                    Historial Clínico
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Plan de Vida -->
+                    <div id="record-plan" class="record-tab hidden space-y-6">
+                        <div class="card p-6 bg-success-50 bg-green-50">
+                            <h3 class="text-xl font-semibold mb-4 text-success">Plan de Vida</h3>
+                            <p class="text-gray-600 mb-6">Seleccione los programas de reintegración en curso:</p>
+
+                            <div class="space-y-4 p-4 border rounded-lg bg-white">
+                                <h4 class="font-medium text-gray-700 mb-3">Programas Asignados (Sí/No)</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label class="flex items-center justify-between p-3 border rounded-lg"><span class="text-gray-700">Programa Erradicación Adicciones</span><div class="flex space-x-3"><label><input type="radio" name="adicciones" class="form-radio text-success h-4 w-4"> Sí</label><label><input type="radio" name="adicciones" class="form-radio text-success h-4 w-4" checked> No</label></div></label>
+                                    <label class="flex items-center justify-between p-3 border rounded-lg"><span class="text-gray-700">Fortalecimiento Capacidades para la Vida</span><div class="flex space-x-3"><label><input type="radio" name="capacidades" class="form-radio text-success h-4 w-4"> Sí</label><label><input type="radio" name="capacidades" class="form-radio text-success h-4 w-4" checked> No</label></div></label>
+                                    <label class="flex items-center justify-between p-3 border rounded-lg"><span class="text-gray-700">Fortalecimiento Habilidades para el Trabajo</span><div class="flex space-x-3"><label><input type="radio" name="trabajo" class="form-radio text-success h-4 w-4"> Sí</label><label><input type="radio" name="trabajo" class="form-radio text-success h-4 w-4" checked> No</label></div></label>
+                                    <label class="flex items-center justify-between p-3 border rounded-lg"><span class="text-gray-700">Reintegración Familiar</span><div class="flex space-x-3"><label><input type="radio" name="familiar" class="form-radio text-success h-4 w-4"> Sí</label><label><input type="radio" name="familiar" class="form-radio text-success h-4 w-4" checked> No</label></div></label>
+                                </div>
+                            </div>
+
+                            <textarea placeholder="Otras Iniciativas (Texto libre)"
+                                      class="w-full p-3 border border-green-300 rounded-lg mt-6" rows="3"></textarea>
+                            
+                            <button onclick="showMessage('Guardar Plan de Vida', 'Plan de Vida guardado con éxito. Proceso de registro completado.', 'success')"
+                                    class="mt-6 bg-success text-white p-3 rounded-lg font-semibold hover:bg-green-700 transition duration-200">
+                                Guardar Plan de Vida
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="showPage('main')" class="mt-6 text-gray-500 hover:text-gray-700 self-start">
+                    &larr; Volver al Panel Principal
+                </button>
+            </div>
+
+            <!-- PANTALLA DE BÚSQUEDA DE PERSONA -->
+            <div id="search-screen" class="page p-8 hidden flex-col flex-grow">
+                <h2 class="text-3xl font-bold text-gray-900 mb-6">Búsqueda y Seguimiento de Persona</h2>
+
+                <!-- Selector de Búsqueda -->
+                <div class="mb-4">
+                    <h4 class="font-medium text-gray-700 mb-2">Opción de Búsqueda:</h4>
+                    <div class="flex gap-6 mb-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="search_option" value="nombre" checked onchange="updateSearchPlaceholder()" class="form-radio text-green-600 h-4 w-4">
+                            <span class="ml-2">Buscar por Nombre</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="search_option" value="id" onchange="updateSearchPlaceholder()" class="form-radio text-green-600 h-4 w-4">
+                            <span class="ml-2">Buscar por Número de ID</span>
+                        </label>
+                    </div>
+                    
+                    <input type="text" id="search-query" oninput="performSearch()" placeholder="Buscar por Nombre (autofiltro dinámico)"
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-green-600 focus:border-green-600 transition duration-150">
+                </div>
+
+                <div class="flex flex-col lg:flex-row gap-6 flex-grow min-h-0">
+                    <!-- Lista de Resultados -->
+                    <div class="lg:w-1/3 bg-gray-50 p-4 rounded-xl card overflow-y-auto hide-scrollbar">
+                        <h3 class="text-lg font-semibold mb-3">Lista de Resultados</h3>
+                        <div id="search-results" class="space-y-2">
+                            <!-- Resultados simulados -->
+                            <div onclick="selectPerson('CUM-PEJ-20092024001', 'Juan Pérez Martínez')" class="result-item p-3 bg-white rounded-lg shadow-sm hover:bg-green-100 cursor-pointer border border-green-200">
+                                <p class="font-medium text-green-700">ID: CUM-PEJ-20092024001</p>
+                                <p class="text-sm text-gray-600">Juan Pérez Martínez</p>
+                            </div>
+                            <div onclick="selectPerson('CUM-LOG-15092024002', 'Maria Lopez García')" class="result-item p-3 bg-white rounded-lg shadow-sm hover:bg-green-100 cursor-pointer">
+                                <p class="font-medium text-green-700">ID: CUM-LOG-15092024002</p>
+                                <p class="text-sm text-gray-600">María López García</p>
+                            </div>
+                            <p id="no-results" class="text-gray-500 text-sm hidden">No se encontraron resultados.</p>
+                        </div>
+                    </div>
+
+                    <!-- Detalles de la Persona Seleccionada -->
+                    <div class="lg:w-2/3 p-4 rounded-xl card flex flex-col">
+                        <h3 class="text-xl font-bold mb-4 text-green-800">Persona: <span id="selected-person-name">Ninguno seleccionado</span></h3>
+                        
+                        <div id="person-details-container" class="hidden flex-col flex-grow">
+                            <!-- Pestañas de Detalle -->
+                            <div class="flex border-b border-gray-200 mb-4">
+                                <button id="detail-tab-data" onclick="showDetailTab('data')" class="tab-button active p-2 mr-4 text-gray-600 text-sm">Datos Generales (A+B)</button>
+                                <button id="detail-tab-follow" onclick="showDetailTab('follow')" class="tab-button p-2 mr-4 text-gray-600 text-sm">Seguimiento</button>
+                                <button id="detail-tab-log" onclick="showDetailTab('log')" class="tab-button p-2 mr-4 text-gray-600 text-sm">Bitácora de Visitas</button>
+                                <!-- Botón "Alerta" (reportar emergencia) -->
+                                <button onclick="showAlertaModal()" class="bg-danger text-white px-3 py-1 rounded-lg hover:bg-red-600 transition duration-200 text-sm font-semibold ml-auto flex items-center">
+                                    Alerta (Emergencia)
+                                </button>
+                            </div>
+
+                            <div class="overflow-y-auto hide-scrollbar flex-grow">
+                                <!-- 1. Datos Generales (Módulo A + B) -->
+                                <div id="detail-data" class="detail-tab space-y-4 p-2">
+                                    <h4 class="font-bold text-lg text-primary">Módulos A y B Registrados</h4>
+                                    <p><span class="font-medium">Nombre/Apodo:</span> <span id="data-nombre"></span></p>
+                                    <p><span class="font-medium">Clave Única:</span> <span id="data-clave"></span></p>
+                                    <p><span class="font-medium">Contacto Exitoso:</span> Sí – Aceptó interactuar</p>
+                                    <p><span class="font-medium">Contexto:</span> Solo / Sola, Estado inconveniente</p>
+                                    <p><span class="font-medium">Necesidades Inmediatas:</span> Alimentación, Artículos de higiene, Atención médica</p>
+                                    <p><span class="font-medium">Situación en Calle:</span> Callejero habitual (más de 1 año)</p>
+                                </div>
+
+                                <!-- 2. Seguimiento (Aproximación, Cuidados, Plan de vida) -->
+                                <div id="detail-follow" class="detail-tab hidden space-y-4 p-2">
+                                    <h4 class="font-bold text-lg text-secondary">Resumen de Seguimiento</h4>
+                                    <div class="p-3 bg-yellow-50 rounded-lg"><span class="font-medium">Aproximación Inicial:</span> Completa (2024-09-20).</div>
+                                    <div class="p-3 bg-yellow-50 rounded-lg"><span class="font-medium">Desarrollo de Cuidados:</span> En Proceso. (Pendientes: Consulta Médica, Documentación).</div>
+                                    <div class="p-3 bg-yellow-50 rounded-lg"><span class="font-medium">Plan de Vida:</span> En Curso. (Programas: Capacidades para la Vida).</div>
+                                </div>
+
+                                <!-- 3. Bitácora de Visitas (Creación y Historial) -->
+                                <div id="detail-log" class="detail-tab hidden space-y-6 p-2">
+                                    <h4 class="font-bold text-lg text-green-700 mb-4">Registrar Nueva Bitácora de Visita</h4>
+                                    
+                                    <div class="bg-gray-50 p-4 rounded-lg space-y-4 border">
+                                        <input type="text" value="" disabled id="bitacora-fecha-auto" class="w-full p-3 border rounded-lg bg-gray-200" placeholder="Fecha/Hora (Auto)">
+                                        <input type="text" value="Brigadista Actual (Prellenado)" disabled class="w-full p-3 border rounded-lg bg-gray-200" placeholder="Brigadistas responsables (Prellenar)">
+                                        <textarea placeholder="Observaciones generales" class="w-full p-3 border rounded-lg" rows="2"></textarea>
+                                        
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div class="border p-3 rounded-lg">
+                                                <h5 class="font-medium text-sm mb-2">Estado de salud observado</h5>
+                                                <div class="space-y-1 text-sm">
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Aparentemente estable</label>
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Tos dificultosa</label>
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Heridas visibles</label>
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Comportamiento alterado</label>
+                                                </div>
+                                            </div>
+                                            <div class="border p-3 rounded-lg">
+                                                <h5 class="font-medium text-sm mb-2">Servicios proporcionados</h5>
+                                                <div class="space-y-1 text-sm">
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Agua / Comida</label>
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Cobija / Abrigo</label>
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Atención médica</label>
+                                                    <label class="block"><input type="checkbox" class="form-checkbox text-green-600 rounded"> Canalización a refugio/albergue</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <textarea placeholder="Incidentes relevantes (Texto libre)" class="w-full p-3 border rounded-lg" rows="1"></textarea>
+                                        
+                                        <div class="flex justify-between items-center">
+                                            <div class="flex space-x-3 text-sm">
+                                                <h5 class="font-medium">Reacción:</h5>
+                                                <label><input type="radio" name="reaccion" class="form-radio text-green-600 h-4 w-4" checked> Aceptación</label>
+                                                <label><input type="radio" name="reaccion" class="form-radio text-green-600 h-4 w-4"> Rechazo</label>
+                                                <label><input type="radio" name="reaccion" class="form-radio text-green-600 h-4 w-4"> Parcial</label>
+                                            </div>
+                                            <div>
+                                                <label class="text-sm font-medium">Próxima Visita:</label>
+                                                <input type="date" class="p-2 border rounded-lg text-sm">
+                                            </div>
+                                        </div>
+                                        
+                                        <button onclick="showMessage('Guardar Bitácora', 'Nueva visita registrada para la persona seleccionada.', 'success')"
+                                                class="w-full bg-green-700 text-white p-3 rounded-lg font-semibold hover:bg-green-800 transition duration-200">
+                                            Guardar Bitácora
+                                        </button>
+                                    </div>
+                                    
+                                    <h4 class="font-bold text-lg text-gray-700 mb-2 mt-8">Historial de Bitácoras (Ejemplo)</h4>
+                                    <div class="border p-4 rounded-lg bg-white shadow-sm">
+                                        <p class="font-bold text-sm text-gray-800">Fecha: 2024-10-01 - <span class="text-primary">Brigadistas: Ana G.</span></p>
+                                        <p class="mt-1 text-sm"><span class="font-medium">Observaciones:</span> Estable, mostró interés en programa laboral.</p>
+                                        <p class="text-sm text-red-500 mt-2"><span class="font-bold">Próxima Visita:</span> 2024-10-08</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="person-details-placeholder" class="flex-grow flex items-center justify-center text-gray-400">
+                            Seleccione una persona de la lista para ver los detalles de seguimiento.
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="showPage('main')" class="mt-6 text-gray-500 hover:text-gray-700 self-start">
+                    &larr; Volver al Panel Principal
+                </button>
+            </div>
+
+            <!-- MODAL DE ALERTA DE EMERGENCIA -->
+            <div id="alerta-modal" class="fixed inset-0 bg-gray-900 bg-opacity-70 hidden items-center justify-center p-4 z-50">
+                <div class="bg-white rounded-xl card max-w-lg w-full p-8 space-y-6 transform transition-all">
+                    <h3 class="text-2xl font-bold text-danger">Módulo de Alerta (Atención Inmediata)</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-medium text-gray-700 mb-2">¿La persona requiere atención inmediata?</h4>
+                            <div class="flex gap-4">
+                                <label><input type="radio" name="alerta_inmediata" value="si" onclick="toggleAlertaDetails(true)" class="form-radio text-danger h-4 w-4"> Sí</label>
+                                <label><input type="radio" name="alerta_inmediata" value="no" onclick="toggleAlertaDetails(false)" class="form-radio text-danger h-4 w-4" checked> No</label>
+                            </div>
+                        </div>
+
+                        <div id="alerta-details" class="space-y-4 border p-4 rounded-lg bg-red-50 hidden">
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2">¿Pertenece a población de Alta Vulnerabilidad?</h4>
+                                <div class="space-y-1">
+                                    <label class="block"><input type="radio" name="vulnerabilidad" class="form-radio text-danger h-4 w-4"> Mujer sola</label>
+                                    <label class="block"><input type="radio" name="vulnerabilidad" class="form-radio text-danger h-4 w-4"> Mujer con infantes</label>
+                                    <label class="block"><input type="radio" name="vulnerabilidad" class="form-radio text-danger h-4 w-4"> Infancia no acompañada</label>
+                                    <label class="block"><input type="radio" name="vulnerabilidad" class="form-radio text-danger h-4 w-4"> No</label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-2">Tipo de emergencia</h4>
+                                <div class="space-y-1">
+                                    <label class="block"><input type="radio" name="tipo_emergencia" class="form-radio text-danger h-4 w-4"> Lesión/padecimiento que pone en riesgo la vida</label>
+                                    <label class="block"><input type="radio" name="tipo_emergencia" class="form-radio text-danger h-4 w-4"> Crisis de salud mental</label>
+                                    <label class="block"><input type="radio" name="tipo_emergencia" class="form-radio text-danger h-4 w-4"> Violencia</label>
+                                </div>
+                            </div>
+                            
+                            <textarea placeholder="Proporcione más detalles" class="w-full p-3 border border-red-300 rounded-lg" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-4 pt-4 border-t">
+                        <button onclick="document.getElementById('alerta-modal').classList.add('hidden'); document.getElementById('alerta-modal').classList.remove('flex');"
+                                class="flex-grow bg-gray-300 text-gray-800 p-3 rounded-lg font-semibold hover:bg-gray-400 transition duration-200">
+                            Volver a pantalla de persona
+                        </button>
+                        <button onclick="showMessage('Alerta Enviada', 'Alerta de emergencia enviada al equipo de respuesta inmediata.', 'error'); document.getElementById('alerta-modal').classList.add('hidden'); document.getElementById('alerta-modal').classList.remove('flex');"
+                                class="flex-grow bg-danger text-white p-3 rounded-lg font-semibold hover:bg-red-700 transition duration-200">
+                            Enviar Alerta
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de Mensajes (Reemplazo de alert()) -->
+            <div id="message-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center p-4 z-50">
+                <div class="bg-white rounded-xl card max-w-sm w-full p-6 space-y-4 transform transition-all">
+                    <h3 id="modal-title" class="text-xl font-bold">Título</h3>
+                    <p id="modal-body" class="text-gray-700"></p>
+                    <button onclick="hideMessage()"
+                            class="w-full bg-primary text-white p-3 rounded-lg font-semibold hover:bg-[#8A1D3F] transition duration-200">
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <script>
+            // Variables de estado
+            let currentPage = 'login';
+            let currentUser = null;
+            let selectedPersonId = null;
+            
+            // Identificadores de las pantallas principales
+            const screens = ['login-screen', 'main-screen', 'new-record-screen', 'search-screen'];
+            // Identificadores de las pestañas de Nuevo Registro
+            const recordTabs = ['aprox', 'cuidados', 'plan'];
+            // Identificadores de las pestañas de Detalle de Persona
+            const detailTabs = ['data', 'follow', 'log'];
+
+            // Datos para Desarrollo de Cuidados
+            const necesidadesInmediatas = ['Alimentación', 'Higiene', 'Documentación', 'Bienes de Movilidad Asistida'];
+            const necesidadesMedianoPlazo = ['Consulta Médica', 'Consulta Psicológica', 'Tratamiento contra las adicciones', 'Reconstrucción de lazos familiares', 'Eventos recreativos'];
+
+            /**
+             * Muestra un modal de mensaje (reemplazo de alert/confirm).
+             * @param {string} title - El título del mensaje.
+             * @param {string} body - El cuerpo del mensaje.
+             * @param {('success'|'error'|'warning'|'info')} type - El tipo para aplicar color.
+             */
+            function showMessage(title, body, type) {
+                const modal = document.getElementById('message-modal');
+                document.getElementById('modal-title').textContent = title;
+                document.getElementById('modal-body').textContent = body;
+
+                const titleElement = document.getElementById('modal-title');
+                // Quitamos las clases de color existentes para aplicar la nueva
+                titleElement.classList.remove('text-primary', 'text-danger', 'text-secondary', 'text-success');
+                const button = modal.querySelector('button');
+                button.classList.remove('bg-primary', 'bg-danger', 'bg-secondary', 'bg-success', 'hover:bg-blue-800', 'hover:bg-red-700', 'hover:bg-orange-700', 'hover:bg-green-700', 'hover:bg-[#8A1D3F]');
+                
+                switch (type) {
+                    case 'success':
+                        titleElement.classList.add('text-success');
+                        button.classList.add('bg-success', 'hover:bg-green-700');
+                        break;
+                    case 'error':
+                        titleElement.classList.add('text-danger');
+                        button.classList.add('bg-danger', 'hover:bg-red-700');
+                        break;
+                    case 'warning':
+                        titleElement.classList.add('text-secondary');
+                        button.classList.add('bg-secondary', 'hover:bg-orange-700');
+                        break;
+                    case 'info':
+                    default:
+                        titleElement.classList.add('text-primary');
+                        // Usar el hover del color primario
+                        button.classList.add('bg-primary', 'hover:bg-[#8A1D3F]'); 
+                        break;
+                }
+                
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function hideMessage() {
+                document.getElementById('message-modal').classList.add('hidden');
+                document.getElementById('message-modal').classList.remove('flex');
+            }
+
+            /**
+             * Muestra una página específica y oculta todas las demás.
+             */
+            function showPage(pageId) {
+                currentPage = pageId;
+                screens.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        if (id.startsWith(pageId)) {
+                            element.classList.remove('hidden');
+                            element.classList.add('flex');
+                        } else {
+                            element.classList.add('hidden');
+                            element.classList.remove('flex');
+                        }
+                    }
+                });
+                
+                if (pageId === 'main') {
+                    updateUserInfo();
+                } else if (pageId === 'new-record') {
+                    showRecordTab('aprox');
+                    // Inicializar fecha/hora
+                    document.getElementById('fecha-hora-aprox').value = new Date().toLocaleString();
+                } else if (pageId === 'search') {
+                    showDetailTab('data');
+                    // Inicializar fecha/hora para bitácora
+                    document.getElementById('bitacora-fecha-auto').value = new Date().toLocaleString();
+                }
+            }
+
+            function handleLogin() {
+                const user = document.getElementById('login-user').value;
+                const pass = document.getElementById('login-pass').value;
+                const errorMessage = document.getElementById('error-message');
+
+                if (user === 'user' && pass === 'pass') {
+                    currentUser = user;
+                    errorMessage.classList.add('hidden');
+                    showMessage('Acceso Concedido', `Bienvenido al sistema, ${user}.`, 'success');
+                    setTimeout(() => showPage('main'), 500); 
+                } else {
+                    errorMessage.classList.remove('hidden');
+                }
+            }
+
+            function updateUserInfo() {
+                const userInfoDiv = document.getElementById('user-info');
+                if (userInfoDiv && currentUser) {
+                    userInfoDiv.textContent = `Usuario: ${currentUser} (Rol: Primario)`;
+                } else {
+                     userInfoDiv.textContent = 'No autenticado';
+                }
+            }
+            
+            /**
+             * Lógica para mostrar/ocultar los campos de identificación según la respuesta SI/NO.
+             */
+            function toggleIdentificacionFields(status) {
+                const completa = document.getElementById('identificacion-completa');
+                const parcial = document.getElementById('identificacion-parcial');
+                
+                if (status === 'si') {
+                    completa.classList.remove('hidden');
+                    parcial.classList.add('hidden');
+                } else {
+                    completa.classList.add('hidden');
+                    parcial.classList.remove('hidden');
+                }
+            }
+
+            /**
+             * Simula la generación de la Clave Única (actualizada con pseudocódigo).
+             * @param {string} nombre - Nombre(s) o Apodo
+             * @param {string} apellido1 - Primer apellido (o vacío si es parcial)
+             * @param {string} apellido2 - Segundo apellido (o vacío)
+             */
+            function generaClaveUnica(nombre, apellido1, apellido2) {
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                
+                // Simulación de iniciales (máx 3)
+                let initialString = '';
+                if (apellido1) {
+                    // Identificación completa: Primeras 3 letras de apellido1, si existe
+                    initialString = apellido1.substring(0, 3).toUpperCase();
+                } else {
+                    // Identificación parcial: Primeras 3 letras del nombre/apodo
+                    initialString = nombre.substring(0, 3).toUpperCase();
+                }
+                
+                // Simulación de consecutivo (siempre 001 por ahora)
+                const consecutivo = '001';
+
+                return `CUM-${initialString}-${day}${month}${year}${consecutivo}`;
+            }
+            
+            /**
+             * Lógica al guardar Módulo A: Genera clave y pregunta por Alerta.
+             */
+            function guardarAproximacionInicial() {
+                let nombre, apellido1, apellido2;
+                const status = document.querySelector('input[name="identificacion_status"]:checked').value;
+
+                if (status === 'si') {
+                    nombre = document.getElementById('nombre-completo').value;
+                    apellido1 = document.getElementById('apellido1').value;
+                    apellido2 = document.getElementById('apellido2').value;
+
+                    if (!nombre || !apellido1) {
+                        showMessage('Error de Identificación', 'Debe ingresar el Nombre y el Primer Apellido para la identificación completa.', 'warning');
+                        return;
+                    }
+                } else {
+                    nombre = document.getElementById('nombre-apodo').value;
+                    apellido1 = '';
+                    apellido2 = '';
+                    
+                    if (!nombre) {
+                        showMessage('Error de Identificación', 'Debe ingresar el Nombre o Apodo conocido.', 'warning');
+                        return;
+                    }
+                }
+                
+                // 1. Generar Clave Única
+                // (La función generaClaveUnica simula el proceso usando los datos disponibles)
+                const clave = generaClaveUnica(nombre, apellido1, apellido2);
+                document.getElementById('clave-unica-display').textContent = clave;
+                
+                // 2. Mostrar pregunta de Alerta (usando el modal de Alerta)
+                document.getElementById('alerta-modal').classList.remove('hidden');
+                document.getElementById('alerta-modal').classList.add('flex');
+                
+                // 3. Modificar el botón de "Volver" del modal para manejar la respuesta NO
+                const backButton = document.querySelector('#alerta-modal button:first-child');
+                backButton.onclick = () => {
+                    const response = document.querySelector('input[name="alerta_inmediata"]:checked')?.value || 'no';
+                    
+                    if (response === 'si') {
+                        // Si es SI, el flujo real terminaría aquí para escalar.
+                        showMessage('Alerta Activada', 'El registro se guardó con Alerta. Finalice el proceso después de la atención de emergencia.', 'error');
+                    } else {
+                        // Si es NO, mostramos Módulo B
+                        document.getElementById('modulo-b-container').classList.remove('hidden');
+                        showMessage('Continuar', 'Módulo A guardado. Continúe con el Módulo B.', 'success');
+                    }
+                    
+                    document.getElementById('alerta-modal').classList.add('hidden');
+                    document.getElementById('alerta-modal').classList.remove('flex');
+                };
+            }
+            
+            /**
+             * Muestra/Oculta los detalles de Alta Vulnerabilidad en el modal de Alerta.
+             */
+            function toggleAlertaDetails(show) {
+                const details = document.getElementById('alerta-details');
+                if (show) {
+                    details.classList.remove('hidden');
+                } else {
+                    details.classList.add('hidden');
+                }
+            }
+            
+            /**
+             * Navega entre las pestañas del formulario Nuevo Registro.
+             */
+            function showRecordTab(tabId) {
+                recordTabs.forEach(id => {
+                    const element = document.getElementById('record-' + id);
+                    const button = document.getElementById('tab-' + id);
+                    if (element && button) {
+                        if (id === tabId) {
+                            element.classList.remove('hidden');
+                            button.classList.add('active');
+                        } else {
+                            element.classList.add('hidden');
+                            button.classList.remove('active');
+                        }
+                    }
+                });
+            }
+
+            /**
+             * Genera la estructura de campos para Desarrollo de Cuidados.
+             */
+            function generateCuidadosFields(containerId, needs, color) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = needs.map(need => `
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 border rounded-lg bg-white shadow-sm items-center">
+                        <span class="font-semibold text-gray-800 col-span-1">${need}</span>
+                        <div class="flex space-x-3 text-sm">
+                            <label><input type="radio" name="solicitud_${need.replace(/\s/g, '')}" class="form-radio text-${color} h-4 w-4" checked> Sí</label>
+                            <label><input type="radio" name="solicitud_${need.replace(/\s/g, '')}" class="form-radio text-${color} h-4 w-4"> No</label>
+                        </div>
+                        <input type="text" placeholder="Dependencia Responsable" class="p-2 border rounded-lg text-sm col-span-1">
+                        <input type="text" placeholder="Nombre de Enlace (Auto)" value="Juan Enlace" disabled class="p-2 border rounded-lg text-sm bg-gray-100 col-span-1">
+                        <select class="p-2 border rounded-lg text-sm col-span-1">
+                            <option>Estatus: Pendiente</option>
+                            <option>Estatus: Atendida</option>
+                            <option>Estatus: Cancelada</option>
+                        </select>
+                    </div>
+                `).join('');
+            }
+            
+            /**
+             * Actualiza el placeholder del campo de búsqueda según el radio button.
+             */
+            function updateSearchPlaceholder() {
+                const option = document.querySelector('input[name="search_option"]:checked').value;
+                const input = document.getElementById('search-query');
+                if (option === 'nombre') {
+                    input.placeholder = 'Buscar por Nombre (autofiltro dinámico)';
+                } else {
+                    input.placeholder = 'Buscar por Número de ID (autofiltro dinámico)';
+                }
+            }
+            
+            /**
+             * Simula la búsqueda dinámica.
+             */
+            function performSearch() {
+                const query = document.getElementById('search-query').value.toLowerCase();
+                const results = document.getElementById('search-results').children;
+                let found = false;
+                
+                for (let i = 0; i < results.length; i++) {
+                    const item = results[i];
+                    if (item.classList.contains('result-item')) {
+                        const text = item.textContent.toLowerCase();
+                        if (text.includes(query) || query === '') {
+                            item.classList.remove('hidden');
+                            found = true;
+                        } else {
+                            item.classList.add('hidden');
+                        }
+                    }
+                }
+                document.getElementById('no-results').classList.toggle('hidden', found);
+            }
+            
+            /**
+             * Selecciona una persona de la lista para mostrar sus detalles.
+             */
+            function selectPerson(id, name) {
+                selectedPersonId = id;
+                document.getElementById('selected-person-name').textContent = name;
+                document.getElementById('person-details-container').classList.remove('hidden');
+                document.getElementById('person-details-container').classList.add('flex');
+                document.getElementById('person-details-placeholder').classList.add('hidden');
+                
+                // Llenado de datos simulado
+                document.getElementById('data-nombre').textContent = name;
+                document.getElementById('data-clave').textContent = id;
+                
+                showDetailTab('data'); // Mostrar siempre la primera pestaña al seleccionar
+            }
+            
+            /**
+             * Navega entre las pestañas de Detalle de Persona.
+             */
+            function showDetailTab(tabId) {
+                detailTabs.forEach(id => {
+                    const element = document.getElementById('detail-' + id);
+                    const button = document.getElementById('detail-tab-' + id);
+                    if (element && button) {
+                        button.classList.remove('active');
+                        element.classList.add('hidden');
+                    }
+                });
+
+                const activeElement = document.getElementById('detail-' + tabId);
+                const activeButton = document.getElementById('detail-tab-' + tabId);
+                if (activeElement && activeButton) {
+                    activeElement.classList.remove('hidden');
+                    activeButton.classList.add('active');
+                }
+            }
+
+            /**
+             * Muestra el modal de Alerta.
+             */
+            function showAlertaModal() {
+                document.getElementById('alerta-modal').classList.remove('hidden');
+                document.getElementById('alerta-modal').classList.add('flex');
+                // Resetear estado del modal
+                document.getElementById('alerta-details').classList.add('hidden');
+            }
+
+            // Inicialización al cargar la ventana
+            window.onload = () => {
+                showPage('login');
+                generateCuidadosFields('inmediatas-list', necesidadesInmediatas, 'primary');
+                generateCuidadosFields('mediano-plazo-list', necesidadesMedianoPlazo, 'secondary');
+                
+                document.getElementById('person-details-container').classList.add('hidden');
+                document.getElementById('person-details-placeholder').classList.remove('hidden');
+                
+                // Inicializar fecha para Módulo A y Bitácora
+                document.getElementById('fecha-hora-aprox').value = new Date().toLocaleString();
+                document.getElementById('bitacora-fecha-auto').value = new Date().toLocaleString();
+                
+                // Inicializar campos de identificación en 'no' por defecto
+                toggleIdentificacionFields('no');
+            };
+
+        </script>
+    </body>
+    </html>
+    
